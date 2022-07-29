@@ -1,7 +1,6 @@
-import os
 import pygame
-from chess.constants import WIDTH,HEIGHT
-from chess.board import Board
+from chess.constants import SQUARE_SIZE, WIDTH,HEIGHT
+from chess.game import Game
 
 FPS = 60
 
@@ -11,20 +10,29 @@ pygame.display.set_caption('Nelson2.0')
 def main():
     run = True
     clock = pygame.time.Clock()
+    game = Game(WINDOW)
     
     while(run):
         clock.tick(FPS)
-        board = Board()
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
             
             if event.type == pygame.MOUSEBUTTONDOWN:
-                pass
-            
-        board.draw(WINDOW)
-        pygame.display.update()
-    pygame.quit()
+                pos = pygame.mouse.get_pos()
+                row, col = get_row_col_from_mouse(pos)
+                #print("Row:"+str(row)+" Col:"+str(col))
+                game.select(int(row),int(col))
+                
+        game.update()
         
+    pygame.quit()
+    
+def get_row_col_from_mouse(pos):
+    x, y = pos
+    row = y // SQUARE_SIZE
+    col = x // SQUARE_SIZE
+    return row, col
+     
 main()

@@ -61,5 +61,5 @@ class Pieces:
         self.calc_pos()
                     
     def __repr__(self):
-        return str(self.color)
+        return str(self.type)
             

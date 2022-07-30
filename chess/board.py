@@ -62,13 +62,13 @@ class Board:
         if type == "pawn":
             moves = self.moves_pawn(piece)
         elif type == "rook":
-            pass
+            moves = self.moves_rook(piece)
         elif type == "knight":
-            pass
+            moves = self.moves_knight(piece)
         elif type == "bishop":
-            pass
+            moves = self.moves_bishop(piece)
         elif type == "queen":
-            pass
+            moves = self.moves_queen(piece)
         elif type == "king":
             pass
         else:
@@ -76,6 +76,159 @@ class Board:
             
         print("Valid moves:")
         print(moves)
+        #print(self.board)
+        return moves
+    
+    def moves_queen(self,piece):
+        return self.moves_bishop(piece) + self.moves_rook(piece)
+    
+    def moves_rook(self,piece):
+        moves = []
+        row = piece.row
+        col = piece.col
+        color = piece.color
+        for i in range(1,8):
+            if row+i>=0 and row+i<=7:
+                if self.get_piece(row+i,col) == 0:
+                    moves.append((row+i,col))
+                else:
+                    if self.get_piece(row+i,col).color != color:
+                        moves.append((row+i,col))
+                    else:
+                        break
+            else:
+                break
+            if self.get_piece(row+i,col) != 0:
+                break
+        for i in range(1,8):
+            if row-i>=0 and row-i<=7:
+                if self.get_piece(row-i,col) == 0:
+                    moves.append((row-i,col))
+                else:
+                    if self.get_piece(row-i,col).color != color:
+                        moves.append((row-i,col))
+                    else:
+                        break
+            else:
+                break
+            if self.get_piece(row-i,col) != 0:
+                break
+        for i in range(1,8):
+            if col+i>=0 and col+i<=7:
+                if self.get_piece(row,col+i) == 0:
+                    moves.append((row,col+i))
+                else:
+                    if self.get_piece(row,col+i).color != color:
+                        moves.append((row,col+i))
+                    else:
+                        break
+            else:
+                break
+            if self.get_piece(row,col+i) != 0:
+                break
+        for i in range(1,8):
+            if col-i>=0 and col-i<=7:
+                if self.get_piece(row,col-i) == 0:
+                    moves.append((row,col-i))
+                else:
+                    if self.get_piece(row,col-i).color != color:
+                        moves.append((row,col-i))
+                    else:
+                        break
+            else:
+                break
+            if self.get_piece(row,col-i) != 0:
+                break
+        return moves
+    
+    def moves_bishop(self,piece):
+        moves = []
+        row = piece.row
+        col = piece.col
+        color = piece.color
+        for i in range(1,8):
+            if row+i>=0 and row+i<=7 and col+i>=0 and col+i<=7:
+                if self.get_piece(row+i,col+i) == 0:
+                    moves.append((row+i,col+i))
+                else:
+                    if self.get_piece(row+i,col+i).color != color:
+                        moves.append((row+i,col+i))
+                    else:
+                        break
+            else:
+                break
+            if self.get_piece(row+i,col+i) != 0:
+                break
+        for i in range(1,8):
+            if row+i>=0 and row+i<=7 and col-i>=0 and col-i<=7:
+                if self.get_piece(row+i,col-i) == 0:
+                    moves.append((row+i,col-i))
+                else:
+                    if self.get_piece(row+i,col-i).color != color:
+                        moves.append((row+i,col-i))
+                    else:
+                        break
+            else:
+                break
+            if self.get_piece(row+i,col-i) != 0:
+                break
+        for i in range(1,8):
+            if row-i>=0 and row-i<=7 and col+i>=0 and col+i<=7:
+                if self.get_piece(row-i,col+i) == 0:
+                    moves.append((row-i,col+i))
+                else:
+                    if self.get_piece(row-i,col+i).color != color:
+                        moves.append((row-i,col+i))
+                    else:
+                        break
+            else:
+                break
+            if self.get_piece(row-i,col+i) != 0:
+                break
+        for i in range(1,8):
+            if row-i>=0 and row-i<=7 and col-i>=0 and col-i<=7:
+                if self.get_piece(row-i,col-i) == 0:
+                    moves.append((row-i,col-i))
+                else:
+                    if self.get_piece(row-i,col-i).color != color:
+                        moves.append((row-i,col-i))
+                    else:
+                        break
+            else:
+                break
+            if self.get_piece(row-i,col-i) != 0:
+                break
+        return moves
+    
+    def moves_knight(self,piece):
+        moves = []
+        row = piece.row
+        col = piece.col
+        color = piece.color
+        if row-1>=0 and row-1<=7 and col-2>=0 and col-2<=7:
+            moves.append((row-1,col-2))
+        if row-1>=0 and row-1<=7 and col+2>=0 and col+2<=7:
+            moves.append((row-1,col+2))
+        if row+1>=0 and row+1<=7 and col-2>=0 and col-2<=7:
+            moves.append((row+1,col-2))
+        if row+1>=0 and row+1<=7 and col+2>=0 and col+2<=7:
+            moves.append((row+1,col+2))
+        if row-2>=0 and row-2<=7 and col-1>=0 and col-1<=7:
+            moves.append((row-2,col-1))
+        if row-2>=0 and row-2<=7 and col+1>=0 and col+1<=7:
+            moves.append((row-2,col+1))
+        if row+2>=0 and row+2<=7 and col-1>=0 and col-1<=7:
+            moves.append((row+2,col-1))
+        if row+2>=0 and row+2<=7 and col+1>=0 and col+1<=7:
+            moves.append((row+2,col+1))
+        i = 0
+        for (temp_row,temp_col) in moves:
+            print((temp_row,temp_col))
+            if (self.get_piece(temp_row,temp_col) != 0) and (self.get_piece(temp_row,temp_col).color == color):
+                print((temp_row,temp_col))
+                moves = moves[:i] + moves[i+1:]
+            else:
+                i = i + 1
         return moves
     
     def moves_pawn(self, piece):

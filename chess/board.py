@@ -1,10 +1,13 @@
 import pygame 
 from .constants import BLACK, GREY,ROWS, SQUARE_SIZE,WHITE,COLUMNS,pieces_initial_pos
 from .pieces import Pieces
+from copy import deepcopy
 
 class Board:
     def __init__(self):
         self.board = []
+        self.white_threat_board = []
+        self.black_threat_board = []
         self.en_passant_piece = [] # piece that can be en passanted this turn
         self.previous_en_passant_piece = [] # piece that was able to be en passanted in the previous turn
         self.white_king = self.black_king = 1
@@ -15,7 +18,32 @@ class Board:
         self.white_bishop_black = self.black_bishop_black = 1
         self.white_pawns = self.black_pawns = 8
         self.create_board()
+        self.create_threat_board()
+        
+    def create_threat_board(self):
+        for row in range(ROWS):
+            self.black_threat_board.append([])
+            self.white_threat_board.append([])
+            for col in range(COLUMNS):
+                self.white_threat_board[row].append(0)
+                self.black_threat_board[row].append(0)
+        self.update_threat_board()
     
+    def create_board(self):
+        for row in range(ROWS):
+            self.board.append([])
+            for col in range(COLUMNS):
+                if(row==0):
+                    self.board[row].append(Pieces(row,col,BLACK,pieces_initial_pos[col]))
+                elif(row==7):
+                    self.board[row].append(Pieces(row,col,WHITE,pieces_initial_pos[col]))
+                elif(row==1):
+                    self.board[row].append(Pieces(row,col,BLACK,"pawn"))
+                elif(row==6):
+                    self.board[row].append(Pieces(row,col,WHITE,"pawn"))
+                else:
+                    self.board[row].append(0)
+                    
     def draw_squares(self, win):
         win.fill(GREY)
         for row in range(ROWS):
@@ -28,6 +56,235 @@ class Board:
                 self.check_en_passant(piece,row,col)
             self.board[piece.row][piece.col], self.board[row][col] = self.board[row][col], self.board[piece.row][piece.col]
             piece.move(row, col)
+            
+    def update_threat_board(self):
+        for x in range(8):
+            for y in range(8):
+                self.black_threat_board[x][y] = 0
+                self.white_threat_board[x][y] = 0
+        for r in range(8):
+            for l in range(8):
+                piece = self.get_piece(r,l)
+                if(piece == 0):
+                    continue 
+                color = piece.color   
+                moves = self.get_threat_moves(piece)
+                if(color == WHITE):
+                    for (row,col) in moves:
+                        self.white_threat_board[row][col] += 1
+                else:
+                    for (row,col) in moves:
+                        self.black_threat_board[row][col] += 1
+        print("\nWhite Threat Board")
+        for x in range(8):
+            s = ""
+            for y in range(8):
+                s+=(str(self.white_threat_board[x][y])+" ")
+            print(s)
+        print("\nBlack Threat Board")
+        for x in range(8):
+            s = ""
+            for y in range(8):
+                s+=(str(self.black_threat_board[x][y])+" ")
+            print(s)
+        
+    def get_threat_moves(self, piece):
+        moves = []
+        type = piece.type
+        if type == "pawn":
+            moves = self.threat_moves_pawn(piece)
+        elif type == "rook":
+            moves = self.threat_moves_rook(piece)
+        elif type == "knight":
+            moves = self.threat_moves_knight(piece)
+        elif type == "bishop":
+            moves = self.threat_moves_bishop(piece)
+        elif type == "queen":
+            moves = self.threat_moves_queen(piece)
+        elif type == "king":
+            moves = self.threat_moves_king(piece)
+        else:
+            print("Error:get_threat_moves")
+        return moves
+    
+    def threat_moves_king(self,piece):
+        moves = []
+        row = piece.row
+        col = piece.col
+        if row+1>=0 and row+1<=7 and col+1>=0 and col+1<=7:
+            moves.append((row+1,col+1))
+        if row+1>=0 and row+1<=7 and col-1>=0 and col-1<=7:
+            moves.append((row+1,col-1))
+        if row-1>=0 and row-1<=7 and col+1>=0 and col+1<=7:
+            moves.append((row-1,col+1))
+        if row-1>=0 and row-1<=7 and col-1>=0 and col-1<=7:
+            moves.append((row-1,col-1))
+        if col+1>=0 and col+1<=7:
+            moves.append((row,col+1))
+        if col-1>=0 and col-1<=7:
+            moves.append((row,col-1))
+        if row+1>=0 and row+1<=7:
+            moves.append((row+1,col))
+        if row-1>=0 and row-1<=7:
+            moves.append((row-1,col))
+        return moves
+    
+    def threat_moves_rook(self,piece):
+        moves = []
+        row = piece.row
+        col = piece.col
+        color = piece.color
+        for i in range(1,8):
+            if row+i>=0 and row+i<=7:
+                if self.get_piece(row+i,col) == 0:
+                    moves.append((row+i,col))
+                else:
+                    moves.append((row+i,col))
+            else:
+                break
+            if self.get_piece(row+i,col) != 0:
+                if not (self.get_piece(row+i,col).type == "king" and self.get_piece(row+i,col).color != color):
+                    break
+        for i in range(1,8):
+            if row-i>=0 and row-i<=7:
+                if self.get_piece(row-i,col) == 0:
+                    moves.append((row-i,col))
+                else:
+                    moves.append((row-i,col))
+            else:
+                break
+            if self.get_piece(row-i,col) != 0:
+                if not (self.get_piece(row-i,col).type == "king" and self.get_piece(row-i,col).color != color):
+                    break
+        for i in range(1,8):
+            if col+i>=0 and col+i<=7:
+                if self.get_piece(row,col+i) == 0:
+                    moves.append((row,col+i))
+                else:
+                    moves.append((row,col+i))
+            else:
+                break
+            if self.get_piece(row,col+i) != 0:
+                if not (self.get_piece(row,col+i).type == "king" and self.get_piece(row,col+i).color != color):
+                    break
+        for i in range(1,8):
+            if col-i>=0 and col-i<=7:
+                if self.get_piece(row,col-i) == 0:
+                    moves.append((row,col-i))
+                else:
+                        moves.append((row,col-i))
+            else:
+                break
+            if self.get_piece(row,col-i) != 0:
+                if not (self.get_piece(row,col-i).type == "king" and self.get_piece(row,col-i).color != color):
+                    break
+        return moves
+    
+    def threat_moves_bishop(self,piece):
+        moves = []
+        row = piece.row
+        col = piece.col
+        color = piece.color
+        for i in range(1,8):
+            if row+i>=0 and row+i<=7 and col+i>=0 and col+i<=7:
+                if self.get_piece(row+i,col+i) == 0:
+                    moves.append((row+i,col+i))
+                else:
+                    moves.append((row+i,col+i))
+            else:
+                break
+            if self.get_piece(row+i,col+i) != 0:
+                if not (self.get_piece(row+i,col+i).type == "king" and self.get_piece(row+i,col+i).color != color):
+                    break
+        for i in range(1,8):
+            if row+i>=0 and row+i<=7 and col-i>=0 and col-i<=7:
+                if self.get_piece(row+i,col-i) == 0:
+                    moves.append((row+i,col-i))
+                else:
+                    moves.append((row+i,col-i))
+            else:
+                break
+            if self.get_piece(row+i,col-i) != 0:
+                if not (self.get_piece(row+i,col-i).type == "king" and self.get_piece(row+i,col-i).color != color):
+                    break
+        for i in range(1,8):
+            if row-i>=0 and row-i<=7 and col+i>=0 and col+i<=7:
+                if self.get_piece(row-i,col+i) == 0:
+                    moves.append((row-i,col+i))
+                else:
+                    moves.append((row-i,col+i))
+            else:
+                break
+            if self.get_piece(row-i,col+i) != 0:
+                if not (self.get_piece(row-i,col+i).type == "king" and self.get_piece(row-i,col+i).color != color):
+                    break
+        for i in range(1,8):
+            if row-i>=0 and row-i<=7 and col-i>=0 and col-i<=7:
+                if self.get_piece(row-i,col-i) == 0:
+                    moves.append((row-i,col-i))
+                else:
+                    moves.append((row-i,col-i))
+            else:
+                break
+            if self.get_piece(row-i,col-i) != 0:
+                if not (self.get_piece(row-i,col-i).type == "king" and self.get_piece(row-i,col-i).color != color):
+                    break
+        return moves
+    
+    def threat_moves_knight(self,piece):
+        moves = []
+        row = piece.row
+        col = piece.col
+        if row-1>=0 and row-1<=7 and col-2>=0 and col-2<=7:
+            moves.append((row-1,col-2))
+        if row-1>=0 and row-1<=7 and col+2>=0 and col+2<=7:
+            moves.append((row-1,col+2))
+        if row+1>=0 and row+1<=7 and col-2>=0 and col-2<=7:
+            moves.append((row+1,col-2))
+        if row+1>=0 and row+1<=7 and col+2>=0 and col+2<=7:
+            moves.append((row+1,col+2))
+        if row-2>=0 and row-2<=7 and col-1>=0 and col-1<=7:
+            moves.append((row-2,col-1))
+        if row-2>=0 and row-2<=7 and col+1>=0 and col+1<=7:
+            moves.append((row-2,col+1))
+        if row+2>=0 and row+2<=7 and col-1>=0 and col-1<=7:
+            moves.append((row+2,col-1))
+        if row+2>=0 and row+2<=7 and col+1>=0 and col+1<=7:
+            moves.append((row+2,col+1))
+        return moves
+    
+    def threat_moves_queen(self,piece):
+        return list(set(self.threat_moves_bishop(piece) + self.threat_moves_rook(piece)))
+    
+    def threat_moves_pawn(self,piece):
+        moves = []
+        row = piece.row
+        col = piece.col
+        color = piece.color
+        if(color == WHITE):
+            if(row == 0):
+                return moves
+            else:
+                if(col == 0):
+                    moves.append((row-1,col+1))
+                elif(col == 7):
+                    moves.append((row-1,col-1))
+                else:
+                    moves.append((row-1,col-1))
+                    moves.append((row-1,col+1))
+        else:
+            if(row == 7):
+                    return moves
+            else:
+                if(col == 0):
+                    moves.append((row+1,col+1))
+                elif(col == 7):
+                    moves.append((row+1,col-1))
+                else:
+                    moves.append((row+1,col-1))
+                    moves.append((row+1,col+1))
+        
+        return moves
             
     def check_en_passant(self,piece,row,col):
         if(piece.color == WHITE):
@@ -51,8 +308,7 @@ class Board:
             piece.move(row, col)
         else:
             pass
-        
-        
+          
     def get_piece(self, row, col):
         return self.board[row][col]
     
@@ -70,13 +326,68 @@ class Board:
         elif type == "queen":
             moves = self.moves_queen(piece)
         elif type == "king":
-            pass
+            moves = self.moves_king(piece)
         else:
             print("Error:get_valid_moves")
             
         print("Valid moves:")
         print(moves)
         #print(self.board)
+        return moves
+    
+    def moves_king(self,piece):
+        moves = []
+        row = piece.row
+        col = piece.col
+        color = piece.color
+        if row+1>=0 and row+1<=7 and col+1>=0 and col+1<=7:
+            if (color == WHITE and self.black_threat_board[row+1][col+1] == 0) or (color == BLACK and self.white_threat_board[row+1][col+1] == 0):
+                if self.get_piece(row+1,col+1) == 0:
+                    moves.append((row+1,col+1))
+                elif self.get_piece(row+1,col+1).color != color:
+                    moves.append((row+1,col+1))
+        if row+1>=0 and row+1<=7 and col-1>=0 and col-1<=7:
+            if (color == WHITE and self.black_threat_board[row+1][col-1] == 0) or (color == BLACK and self.white_threat_board[row+1][col-1] == 0):
+                if self.get_piece(row+1,col-1) == 0:
+                    moves.append((row+1,col-1))
+                elif self.get_piece(row+1,col-1).color != color:
+                    moves.append((row+1,col-1))
+        if row-1>=0 and row-1<=7 and col+1>=0 and col+1<=7:
+            if (color == WHITE and self.black_threat_board[row-1][col+1] == 0) or (color == BLACK and self.white_threat_board[row-1][col+1] == 0):
+                if self.get_piece(row-1,col+1) == 0:
+                    moves.append((row-1,col+1))
+                elif self.get_piece(row-1,col+1).color != color:
+                    moves.append((row-1,col+1))
+        if row-1>=0 and row-1<=7 and col-1>=0 and col-1<=7:
+            if (color == WHITE and self.black_threat_board[row-1][col-1] == 0) or (color == BLACK and self.white_threat_board[row-1][col-1] == 0):
+                if self.get_piece(row-1,col-1) == 0:
+                    moves.append((row-1,col-1))
+                elif self.get_piece(row-1,col-1).color != color:
+                    moves.append((row-1,col-1))
+        if col+1>=0 and col+1<=7:
+            if (color == WHITE and self.black_threat_board[row][col+1] == 0) or (color == BLACK and self.white_threat_board[row][col+1] == 0):
+                if self.get_piece(row,col+1) == 0:
+                    moves.append((row,col+1))
+                elif self.get_piece(row,col+1).color != color:
+                    moves.append((row,col+1))
+        if col-1>=0 and col-1<=7:
+            if (color == WHITE and self.black_threat_board[row][col-1] == 0) or (color == BLACK and self.white_threat_board[row][col-1] == 0):
+                if self.get_piece(row,col-1) == 0:
+                    moves.append((row,col-1))
+                elif self.get_piece(row,col-1).color != color:
+                    moves.append((row,col-1))
+        if row+1>=0 and row+1<=7:
+            if (color == WHITE and self.black_threat_board[row+1][col] == 0) or (color == BLACK and self.white_threat_board[row+1][col] == 0):
+                if self.get_piece(row+1,col) == 0:
+                    moves.append((row+1,col))
+                elif self.get_piece(row+1,col).color != color:
+                    moves.append((row+1,col))
+        if row-1>=0 and row-1<=7:
+            if (color == WHITE and self.black_threat_board[row-1][col] == 0) or (color == BLACK and self.white_threat_board[row-1][col] == 0):
+                if self.get_piece(row-1,col) == 0:
+                    moves.append((row-1,col))
+                elif self.get_piece(row-1,col).color != color:
+                    moves.append((row-1,col))
         return moves
     
     def moves_queen(self,piece):
@@ -295,21 +606,6 @@ class Board:
                     if((row,col-1) in self.previous_en_passant_piece):
                         moves.append((row+1,col-1))
         return moves
-    
-    def create_board(self):
-        for row in range(ROWS):
-            self.board.append([])
-            for col in range(COLUMNS):
-                if(row==0):
-                    self.board[row].append(Pieces(row,col,BLACK,pieces_initial_pos[col]))
-                elif(row==7):
-                    self.board[row].append(Pieces(row,col,WHITE,pieces_initial_pos[col]))
-                elif(row==1):
-                    self.board[row].append(Pieces(row,col,BLACK,"pawn"))
-                elif(row==6):
-                    self.board[row].append(Pieces(row,col,WHITE,"pawn"))
-                else:
-                    self.board[row].append(0)
                     
     def draw(self,win):
         self.draw_squares(win)

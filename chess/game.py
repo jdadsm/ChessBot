@@ -41,8 +41,10 @@ class Game:
         piece = self.board.get_piece(row, col)
         if self.selected and piece == 0 and (row, col) in self.valid_moves:
             self.board.move(self.selected, row, col)
+            self.board.update_threat_board()
         elif self.selected and (row, col) in self.valid_moves:
             self.board.capture(self.selected, row, col)
+            self.board.update_threat_board()
         else:
             return False
         self.change_turn()

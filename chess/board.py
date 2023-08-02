@@ -1,13 +1,14 @@
 import pygame 
 from .constants import BLACK, GREY,ROWS, SQUARE_SIZE,WHITE,COLUMNS,pieces_initial_pos
 from .pieces import Pieces
-from copy import deepcopy
 
 class Board:
     def __init__(self):
         self.board = []
         self.white_threat_board = []
         self.black_threat_board = []
+        self.white_king_coords = (7,4)
+        self.black_king_coords = (0,4)
         self.en_passant_piece = [] # piece that can be en passanted this turn
         self.previous_en_passant_piece = [] # piece that was able to be en passanted in the previous turn
         self.white_king = self.black_king = 1
@@ -56,6 +57,24 @@ class Board:
                 self.check_en_passant(piece,row,col)
             self.board[piece.row][piece.col], self.board[row][col] = self.board[row][col], self.board[piece.row][piece.col]
             piece.move(row, col)
+            if(piece.type == "king"):
+                if(piece.color == WHITE):
+                    self.white_king_coords = (row,col)
+                else:
+                    self.black_king_coords = (row,col)
+    
+    def move_back(self, piece, row, col):
+        if(piece != 0):
+            if(piece.type == "pawn"):
+                #self.check_en_passant(piece,row,col)
+                pass
+            self.board[piece.row][piece.col], self.board[row][col] = self.board[row][col], self.board[piece.row][piece.col]
+            piece.move(row, col)
+            if(piece.type == "king"):
+                if(piece.color == WHITE):
+                    self.white_king_coords = (row,col)
+                else:
+                    self.black_king_coords = (row,col)
             
     def update_threat_board(self):
         for x in range(8):
@@ -306,6 +325,11 @@ class Board:
             self.board[captured_piece.row][captured_piece.col] = 0
             self.board[piece.row][piece.col], self.board[row][col] = self.board[row][col], self.board[piece.row][piece.col]
             piece.move(row, col)
+            if(piece.type == "king"):
+                if(piece.color == WHITE):
+                    self.white_king_coords = (row,col)
+                else:
+                    self.black_king_coords = (row,col)
         else:
             pass
           
@@ -315,6 +339,7 @@ class Board:
     def get_valid_moves(self, piece):
         moves = []
         type = piece.type
+        
         if type == "pawn":
             moves = self.moves_pawn(piece)
         elif type == "rook":
@@ -329,7 +354,29 @@ class Board:
             moves = self.moves_king(piece)
         else:
             print("Error:get_valid_moves")
-            
+        
+        pre_check_moves = list(moves)
+        original_pos = (piece.row,piece.col)
+        if piece.type != "king":
+            print("Original piece position:",original_pos)
+            print("Moves:",pre_check_moves)
+            for move in pre_check_moves:
+                print("Move:",move)
+                print("Moving "+ piece.type + "," + str(piece.row) + "," + str(piece.col) +" to "+ str(move[0]) + "," + str(move[1]))
+                self.move(piece,move[0],move[1])
+                self.update_threat_board()
+                if piece.color == WHITE:
+                    if self.black_threat_board[self.white_king_coords[0]][self.white_king_coords[1]] != 0:
+                        moves.remove(move)
+                else:
+                    if self.white_threat_board[self.black_king_coords[0]][self.black_king_coords[1]] != 0:
+                        moves.remove(move)
+                print("Moving "+ piece.type + "," + str(piece.row) + "," + str(piece.col) +" back to "+ str(original_pos[0]) + "," + str(original_pos[1]))
+                self.move_back(piece,original_pos[0],original_pos[1])
+                self.update_threat_board()
+        
+        
+        
         print("Valid moves:")
         print(moves)
         #print(self.board)

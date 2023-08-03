@@ -55,6 +55,21 @@ class Game:
         self.valid_moves = []
         self.board.previous_en_passant_piece = self.board.en_passant_piece
         self.board.en_passant_piece = []
+        return not self.check_for_checkmate()
+    
+    def check_for_checkmate(self):
+        for row in range(7,-1,-1):
+            for col in range(8):
+                piece = self.board.board[row][col]
+                if piece != 0:
+                    if piece.color == self.turn:
+                        if self.board.get_valid_moves(piece):
+                            return False
+        if self.turn != WHITE:
+            print("White wins by checkmate!")
+        else:
+            print("Black wins by checkmate!")
+        self = self.reset()
         return True
     
     def _check_castle_flags(self,row,col):

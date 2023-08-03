@@ -40,10 +40,14 @@ class Game:
     def _move(self, row, col):
         piece = self.board.get_piece(row, col)
         if self.selected and piece == 0 and (row, col) in self.valid_moves:
+            init_row,init_col = self.selected.row,self.selected.col
             self.board.move(self.selected, row, col)
+            self._check_castle_flags(init_row,init_col)
             self.board.update_threat_board()
         elif self.selected and (row, col) in self.valid_moves:
+            init_row,init_col = self.selected.row,self.selected.col
             self.board.capture(self.selected, row, col)
+            self._check_castle_flags(init_row,init_col)
             self.board.update_threat_board()
         else:
             return False
@@ -52,6 +56,31 @@ class Game:
         self.board.previous_en_passant_piece = self.board.en_passant_piece
         self.board.en_passant_piece = []
         return True
+    
+    def _check_castle_flags(self,row,col):
+        if self.selected != 0:
+            if self.selected.type == "king":
+                if self.selected.color == WHITE:
+                    self.board.white_can_castle_qs = False
+                    self.board.white_can_castle_ks = False
+                else:
+                    self.board.black_can_castle_qs = False
+                    self.board.black_can_castle_ks = False
+            if self.selected.type == "rook":
+                #print("Here:",self.selected)
+                #print(self.selected.color)
+                #print("Row:",row)
+                #print("Col:",col)
+                if self.selected.color == WHITE:
+                    if row == 7 and col == 0:
+                        self.board.white_can_castle_qs = False
+                    elif row == 7 and col == 7:
+                        self.board.white_can_castle_ks = False
+                else:
+                    if self.selected.row == 0 and self.selected.col == 0:
+                        self.board.black_can_castle_qs = False
+                    elif self.selected.row == 0 and self.selected.col == 7:
+                        self.board.black_can_castle_ks = False
     
     def change_turn(self):
         if(self.turn == WHITE):

@@ -11,6 +11,7 @@ class Board:
         self.black_king_coords = (0,4)
         self.en_passant_piece = [] # piece that can be en passanted this turn
         self.previous_en_passant_piece = [] # piece that was able to be en passanted in the previous turn
+        self.simulation_captured_piece = None
         self.white_king = self.black_king = 1
         self.white_queen = self.black_queen = 1
         self.white_rook = self.black_rook = 2
@@ -62,19 +63,6 @@ class Board:
                     self.white_king_coords = (row,col)
                 else:
                     self.black_king_coords = (row,col)
-    
-    def move_back(self, piece, row, col):
-        if(piece != 0):
-            if(piece.type == "pawn"):
-                #self.check_en_passant(piece,row,col)
-                pass
-            self.board[piece.row][piece.col], self.board[row][col] = self.board[row][col], self.board[piece.row][piece.col]
-            piece.move(row, col)
-            if(piece.type == "king"):
-                if(piece.color == WHITE):
-                    self.white_king_coords = (row,col)
-                else:
-                    self.black_king_coords = (row,col)
             
     def update_threat_board(self):
         for x in range(8):
@@ -94,6 +82,7 @@ class Board:
                 else:
                     for (row,col) in moves:
                         self.black_threat_board[row][col] += 1
+        """
         print("\nWhite Threat Board")
         for x in range(8):
             s = ""
@@ -106,6 +95,13 @@ class Board:
             for y in range(8):
                 s+=(str(self.black_threat_board[x][y])+" ")
             print(s)
+        print("\nBoard")
+        for x in range(8):
+            s = ""
+            for y in range(8):
+                s+=(str(self.board[x][y])+",")
+            print(s)
+        """   
         
     def get_threat_moves(self, piece):
         moves = []
@@ -336,7 +332,7 @@ class Board:
     def get_piece(self, row, col):
         return self.board[row][col]
     
-    def get_valid_moves(self, piece):
+    def get_valid_moves(self, piece:Pieces):
         moves = []
         type = piece.type
         
@@ -356,31 +352,77 @@ class Board:
             print("Error:get_valid_moves")
         
         pre_check_moves = list(moves)
-        original_pos = (piece.row,piece.col)
         if piece.type != "king":
-            print("Original piece position:",original_pos)
             print("Moves:",pre_check_moves)
             for move in pre_check_moves:
-                print("Move:",move)
-                print("Moving "+ piece.type + "," + str(piece.row) + "," + str(piece.col) +" to "+ str(move[0]) + "," + str(move[1]))
-                self.move(piece,move[0],move[1])
-                self.update_threat_board()
-                if piece.color == WHITE:
-                    if self.black_threat_board[self.white_king_coords[0]][self.white_king_coords[1]] != 0:
-                        moves.remove(move)
-                else:
-                    if self.white_threat_board[self.black_king_coords[0]][self.black_king_coords[1]] != 0:
-                        moves.remove(move)
-                print("Moving "+ piece.type + "," + str(piece.row) + "," + str(piece.col) +" back to "+ str(original_pos[0]) + "," + str(original_pos[1]))
-                self.move_back(piece,original_pos[0],original_pos[1])
-                self.update_threat_board()
-        
-        
+                if self.verify_move_for_checks_and_pins(move,piece):
+                    moves.remove(move)
+                    
+        #print("En passant:",self.en_passant_piece)
+        #print("Previous en passant:",self.previous_en_passant_piece)
         
         print("Valid moves:")
         print(moves)
         #print(self.board)
         return moves
+    
+    # returns true if the move is not legal
+    def verify_move_for_checks_and_pins(self,move,piece:Pieces): 
+        illegal_move = False
+        
+        print("Move:",move)
+        print("Moving "+ piece.type + " in " + str(piece.row) + "," + str(piece.col) +" to "+ str(move[0]) + "," + str(move[1]))
+        
+        original_pos = (piece.row,piece.col)
+        self.simulate_move(piece,move[0],move[1])
+        self.update_threat_board()
+        if piece.color == WHITE:
+            if self.black_threat_board[self.white_king_coords[0]][self.white_king_coords[1]] != 0:
+                illegal_move = True
+        else:
+            if self.white_threat_board[self.black_king_coords[0]][self.black_king_coords[1]] != 0:
+                illegal_move = True
+        print("Moving "+ piece.type + " in " + str(piece.row) + "," + str(piece.col) +" back to "+ str(original_pos[0]) + "," + str(original_pos[1]))
+        self.undo_simulation_move(piece,original_pos[0],original_pos[1])
+        self.update_threat_board()
+        
+        return illegal_move
+    
+    def simulate_move(self, piece, row, col):
+        if(piece != 0):
+                
+            self.simulation_init_pos = (piece.row,piece.col)
+            if self.board[row][col] != 0:
+                self.simulation_captured_piece = self.board[row][col]
+                self.board[row][col] = 0
+                
+            self.board[piece.row][piece.col], self.board[row][col] = self.board[row][col], self.board[piece.row][piece.col]
+            piece.move(row, col)
+            if(piece.type == "king"):
+                if(piece.color == WHITE):
+                    self.white_king_coords = (row,col)
+                else:
+                    self.black_king_coords = (row,col)
+        #print("Simulation - Captured piece: ",self.simulation_captured_piece)
+        #print("Simulation - piece: ",piece)
+        #print("Simulation - moved to: " + str(row) + "," + str(col))
+    
+    def undo_simulation_move(self, piece, row, col):
+        if(piece != 0):
+            
+            self.board[piece.row][piece.col], self.board[row][col] = self.board[row][col], self.board[piece.row][piece.col]
+            if self.simulation_captured_piece:
+                self.board[self.simulation_captured_piece.row][self.simulation_captured_piece.col] = self.simulation_captured_piece
+                self.simulation_captured_piece = None
+            piece.move(row, col)
+            if(piece.type == "king"):
+                if(piece.color == WHITE):
+                    self.white_king_coords = (row,col)
+                else:
+                    self.black_king_coords = (row,col)
+        #print("Undoing simulation - Captured piece: ",self.simulation_captured_piece)
+        #print("Undoing simulation - piece: ",piece)
+        #print("Undoing simulation - moved back to: " + str(row) + "," + str(col))
     
     def moves_king(self,piece):
         moves = []

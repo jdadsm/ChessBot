@@ -1,5 +1,6 @@
-import pygame 
-from .constants import BLACK, GREY,ROWS, SQUARE_SIZE,WHITE,COLUMNS,pieces_initial_pos
+import pygame
+
+from .constants import BLACK, GREY,ROWS, SQUARE_SIZE,WHITE,COLUMNS,PIECES_INITIAL_POS
 from .pieces import Pieces
 
 class Board:
@@ -16,13 +17,6 @@ class Board:
         self.black_can_castle_ks = True # False if black king or kingside black rook has moved
         self.white_can_castle_qs = True # False if white king or queenside white rook has moved
         self.white_can_castle_ks = True # False if white king or kingside white rook has moved
-        self.white_king = self.black_king = 1
-        self.white_queen = self.black_queen = 1
-        self.white_rook = self.black_rook = 2
-        self.white_knight = self.black_knight = 2
-        self.white_bishop_white = self.black_bishop_white = 1
-        self.white_bishop_black = self.black_bishop_black = 1
-        self.white_pawns = self.black_pawns = 8
         self.create_board()
         self.create_threat_board()
         
@@ -40,9 +34,9 @@ class Board:
             self.board.append([])
             for col in range(COLUMNS):
                 if(row==0):
-                    self.board[row].append(Pieces(row,col,BLACK,pieces_initial_pos[col]))
+                    self.board[row].append(Pieces(row,col,BLACK,PIECES_INITIAL_POS[col]))
                 elif(row==7):
-                    self.board[row].append(Pieces(row,col,WHITE,pieces_initial_pos[col]))
+                    self.board[row].append(Pieces(row,col,WHITE,PIECES_INITIAL_POS[col]))
                 elif(row==1):
                     self.board[row].append(Pieces(row,col,BLACK,"pawn"))
                 elif(row==6):
@@ -378,7 +372,7 @@ class Board:
         #print("En passant:",self.en_passant_piece)
         #print("Previous en passant:",self.previous_en_passant_piece)
         
-        print("Valid moves:",moves)
+        #print("Valid moves:",moves)
         #print(self.board)
         return moves
     
@@ -399,10 +393,6 @@ class Board:
     # returns true if the move is not legal
     def verify_move_for_checks_and_pins(self,move,piece:Pieces): 
         illegal_move = False
-        
-        #print("Move:",move)
-        #print("Moving "+ piece.type + " in " + str(piece.row) + "," + str(piece.col) +" to "+ str(move[0]) + "," + str(move[1]))
-        
         original_pos = (piece.row,piece.col)
         self.simulate_move(piece,move[0],move[1])
         self.update_threat_board()
@@ -632,96 +622,39 @@ class Board:
     
     def moves_knight(self,piece):
         moves = []
-        row = piece.row
-        col = piece.col
-        color = piece.color
-        if row-1>=0 and row-1<=7 and col-2>=0 and col-2<=7:
-            moves.append((row-1,col-2))
-        if row-1>=0 and row-1<=7 and col+2>=0 and col+2<=7:
-            moves.append((row-1,col+2))
-        if row+1>=0 and row+1<=7 and col-2>=0 and col-2<=7:
-            moves.append((row+1,col-2))
-        if row+1>=0 and row+1<=7 and col+2>=0 and col+2<=7:
-            moves.append((row+1,col+2))
-        if row-2>=0 and row-2<=7 and col-1>=0 and col-1<=7:
-            moves.append((row-2,col-1))
-        if row-2>=0 and row-2<=7 and col+1>=0 and col+1<=7:
-            moves.append((row-2,col+1))
-        if row+2>=0 and row+2<=7 and col-1>=0 and col-1<=7:
-            moves.append((row+2,col-1))
-        if row+2>=0 and row+2<=7 and col+1>=0 and col+1<=7:
-            moves.append((row+2,col+1))
-        i = 0
-        for (temp_row,temp_col) in moves:
-            if (self.get_piece(temp_row,temp_col) != 0) and (self.get_piece(temp_row,temp_col).color == color):
-                moves = moves[:i] + moves[i+1:]
-            else:
-                i = i + 1
-        return moves
+        for val in zip([-1, -1, 1, 1, -2, -2, 2, 2],[-2, 2, -2, 2, -1, 1, -1, 1]):
+            if 0<=piece.row+val[0]<8 and 0<=piece.col+val[1]<8:
+                moves.append((piece.row+val[0],piece.col+val[1]))
+        filtered_moves = []
+        for r,c in moves:
+            if not ((self.get_piece(r,c) != 0) and (self.get_piece(r,c).color == piece.color)):
+                filtered_moves.append((r,c))
+        return filtered_moves
     
     def moves_pawn(self, piece):
         moves = []
-        row = piece.row
-        col = piece.col
-        color = piece.color
-        if(color == WHITE):
-            if(self.get_piece(row-1,col) == 0):
-                moves.append((row-1,col))
-                if(self.get_piece(row-2,col) == 0):
-                    if(row == 6):
-                        moves.append((row-2,col))
-            if col != 0 and col != 7:
-                if(self.get_piece(row-1,col-1) != 0 and self.get_piece(row-1,col-1).color != color):
-                    moves.append((row-1,col-1))
-                if(self.get_piece(row-1,col+1) != 0 and self.get_piece(row-1,col+1).color != color):
-                    moves.append((row-1,col+1))  
-                if(self.get_piece(row,col-1) != 0 and self.get_piece(row,col-1).color != color):
-                    if((row,col-1) in self.previous_en_passant_piece):
-                        moves.append((row-1,col-1))
-                if(self.get_piece(row,col+1) != 0 and self.get_piece(row,col+1).color != color):
-                    if((row,col+1) in self.previous_en_passant_piece):
-                        moves.append((row-1,col+1)) 
-            if col == 0:
-                if(self.get_piece(row-1,col+1) != 0 and self.get_piece(row-1,col+1).color != color):
-                    moves.append((row-1,col+1))
-                if(self.get_piece(row,col+1) != 0 and self.get_piece(row,col+1).color != color):
-                    if((row,col+1) in self.previous_en_passant_piece):
-                        moves.append((row-1,col+1))
-            if col == 7:
-                if(self.get_piece(row-1,col-1) != 0 and self.get_piece(row-1,col-1).color != color):
-                    moves.append((row-1,col-1))
-                if(self.get_piece(row,col-1) != 0 and self.get_piece(row,col-1).color != color):
-                    if((row,col-1) in self.previous_en_passant_piece):
-                        moves.append((row-1,col-1))
-        else:
-            if(self.get_piece(row+1,col) == 0):
-                moves.append((row+1,col))
-                if(self.get_piece(row+2,col) == 0):
-                    if(row == 1):
-                        moves.append((row+2,col))
-            if col != 0 and col != 7:
-                if(self.get_piece(row+1,col-1) != 0 and self.get_piece(row+1,col-1).color != color):
-                    moves.append((row+1,col-1))
-                if(self.get_piece(row+1,col+1) != 0 and self.get_piece(row+1,col+1).color != color):
-                    moves.append((row+1,col+1)) 
-                if(self.get_piece(row,col-1) != 0 and self.get_piece(row,col-1).color != color):
-                    if((row,col-1) in self.previous_en_passant_piece):
-                        moves.append((row+1,col-1))
-                if(self.get_piece(row,col+1) != 0 and self.get_piece(row,col+1).color != color):
-                    if((row,col+1) in self.previous_en_passant_piece):
-                        moves.append((row+1,col+1)) 
-            if col == 0:
-                if(self.get_piece(row+1,col+1) != 0 and self.get_piece(row+1,col+1).color != color):
-                    moves.append((row+1,col+1))
-                if(self.get_piece(row,col+1) != 0 and self.get_piece(row,col+1).color != color):
-                    if((row,col+1) in self.previous_en_passant_piece):
-                        moves.append((row+1,col+1))
-            if col == 7:
-                if(self.get_piece(row+1,col-1) != 0 and self.get_piece(row+1,col-1).color != color):
-                    moves.append((row+1,col-1))
-                if(self.get_piece(row,col-1) != 0 and self.get_piece(row,col-1).color != color):
-                    if((row,col-1) in self.previous_en_passant_piece):
-                        moves.append((row+1,col-1))
+        row, col, color = piece.row, piece.col, piece.color
+        direction = -1 if color == WHITE else 1
+
+        if self.get_piece(row + direction, col) == 0:
+            moves.append((row + direction, col))
+            if row == (6 if color == WHITE else 1) and self.get_piece(row + 2 * direction, col) == 0:
+                moves.append((row + 2 * direction, col))
+
+        for offset in [-1, 1]:
+            new_col = col + offset
+            if 0 <= new_col <= 7:
+                target_piece = self.get_piece(row + direction, new_col)
+                if target_piece != 0 and target_piece.color != color:
+                    moves.append((row + direction, new_col))
+
+        for offset in [-1, 1]:
+            new_col = col + offset
+            if 0 <= new_col <= 7:
+                target_square = (row, new_col)
+                if target_square in self.previous_en_passant_piece:
+                    moves.append((row + direction, new_col))
+
         return moves
                     
     def draw(self,win):

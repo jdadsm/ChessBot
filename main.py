@@ -1,4 +1,5 @@
 import pygame
+import logging
 from chess.constants import SQUARE_SIZE, WIDTH,HEIGHT
 from chess.game import Game
 
@@ -22,9 +23,7 @@ def main():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 pos = pygame.mouse.get_pos()
                 row, col = get_row_col_from_mouse(pos)
-                #print("Row:"+str(row)+" Col:"+str(col))
                 game.select(int(row),int(col))
-                
         game.update()
         
     pygame.quit()

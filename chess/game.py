@@ -16,7 +16,7 @@ class Game:
         self.selected = None
         self.board = Board()
         self.turn = WHITE
-        self.valid_moves = {}
+        self.valid_moves = []
         
     def reset(self):
         self._init()
@@ -82,10 +82,6 @@ class Game:
                     self.board.black_can_castle_qs = False
                     self.board.black_can_castle_ks = False
             if self.selected.type == "rook":
-                #print("Here:",self.selected)
-                #print(self.selected.color)
-                #print("Row:",row)
-                #print("Col:",col)
                 if self.selected.color == WHITE:
                     if row == 7 and col == 0:
                         self.board.white_can_castle_qs = False
